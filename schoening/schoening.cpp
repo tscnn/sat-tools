@@ -123,7 +123,7 @@ int main(int argc, char **argv){
             
             //random assignment
             for(j=0;j<n;j++)
-                a[j]=rand_r(seed+proc)%2;
+                a[j]=rand_r(seed+proc)%2;//we increase the pointer not the seed!
             
             #ifdef LOG
                 #pragma omp critical
