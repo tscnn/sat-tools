@@ -23,7 +23,7 @@ int main(int argc, char **argv){
     //read head
     unsigned int n,m;
     if(fscanf(fp," cnf %d %d\n",&n,&m)!=2){
-        printf("cannot read input");
+        fprintf(stderr,"cannot read input");
         exit(0);
     }
     
@@ -34,7 +34,7 @@ int main(int argc, char **argv){
         int u;
         do{
             if(fscanf(fp,"%d",&u)!=1){
-                printf("cannot read input");
+                fprintf(stderr,"cannot read input");
                 exit(0);
             }
             if(u!=0) clauses[i].push_back(u);
@@ -57,17 +57,30 @@ int main(int argc, char **argv){
         seed[i]=rand_r(seed);
     
     /*
-    mpz_t is a integer type without limitation.
+    mpz_t is a integer type without size limitation.
     mpz_init(x) initialize x and set it to zero.
     mpz_clear(x) free the space that x uses.
     mpz_ui_pow_ui(x,b,e) calculates x=b^e. b,e are unsigned ints.
     mpz_add_ui(x,y,n) calculates x=y+n. x,y are mpz_t and n are unsigned int.
     */
-    mpz_t s,t;
-    mpz_init(s);
+    
+    //calculate s=(2(k-1)/k)^n
+    mpf_t s;
+    mpf_init(s);
+    mpf_set_ui(s,2*(k-1));
+    mpf_div_ui(s,s,k);
+    mpf_pow_ui(s,s,n);
+    
+    //calculate t=ceil(s/nbprocs)
+    mpf_t t_float;
+    mpf_init(t_float);
+    mpf_div_ui(t_float,s,nbprocs);
+    mpf_ceil(t_float,t_float);
+    
+    //calculate t=(int)t_float;
+    mpz_t t;
     mpz_init(t);
-    mpz_ui_pow_ui( s, 2, (unsigned int) ceil(log2(2.0-2.0/k)*n) );
-    mpz_cdiv_q_ui(t,s,nbprocs);
+    mpz_set_f(t,t_float);
     
     #ifdef LOG
         printf("c nbproc=%d\n",nbprocs);
@@ -75,22 +88,27 @@ int main(int argc, char **argv){
         printf("c m=%d\n",m);
         printf("c k=%d\n",k);
         printf("c b=%f\n",log2(2.0-2.0/k)*n);
-        printf("c s=");mpz_out_str(stdout,10,s);printf("\n");
+        printf("c s=");mpf_out_str(stdout,10,40,s);printf("\n");
+        printf("c t_float=");mpf_out_str(stdout,10,40,t_float);printf("\n");
         printf("c t=");mpz_out_str(stdout,10,t);printf("\n");
     #endif
 
     bool global_sat=false;
+    unsigned int *global_a=new unsigned int[n];
     
     //parallelization with openmp
     #pragma omp parallel for
     for(unsigned int proc=0; proc<nbprocs; proc++){
     
         #ifdef LOG
-            printf("c i am worker #%d\n",proc);
+            #pragma omp critical
+            {
+                printf("c i am worker#%d\n",proc);
+            }
         #endif
         
         //assignment
-        unsigned int *a = new unsigned int[n];
+        unsigned int *a=new unsigned int[n];
         //counters
         unsigned int j,l,p,r,v;
         //literal
@@ -110,7 +128,7 @@ int main(int argc, char **argv){
             #ifdef LOG
                 #pragma omp critical
                 {
-                    printf("c worker #%d walking randomly #",proc);
+                    printf("c worker#%d: walking randomly #",proc);
                     mpz_out_str(stdout,10,i);
                     printf("\n");
                 }
@@ -137,7 +155,7 @@ int main(int argc, char **argv){
                     //print assignment
                     #pragma omp critical
                     {
-                        printf("c worker #%d ",proc);
+                        printf("c worker#%d: ",proc);
                         for(p=0;p<n;p++) printf("%d",a[p]);
                         printf(sat?" satisfies ! ! ! ! ! ! ! ! ! ! ! !\n":" satisfies not\n");
                     }
@@ -151,7 +169,7 @@ int main(int argc, char **argv){
                     #ifdef LOG
                         #pragma omp critical
                         {
-                            printf("c worker #%d choosing clause #%d=(",proc,l);
+                            printf("c worker#%d: choosing clause #%d=(",proc,l);
                             //print clause
                             for(p=0;p<clauses[l].size();p++){
                                 printf("%d",clauses[l][p]);
@@ -166,13 +184,16 @@ int main(int argc, char **argv){
     
         if(!global_sat && sat){
             global_sat=true;
-            printf("formula is satisfiable with ");
-            for(j=0;j<n;j++) printf("%d",a[j]);
-            printf("\n");
+            for(j=0;j<n;j++) global_a[j]=a[j];
         }
     }
     
-    if(!global_sat)
+    if(global_sat){
+        printf("formula is satisfiable with ");
+        for(int i=0;i<n;i++) printf("%d",global_a[i]);
+        printf("\n");
+    }else{
         printf("(with very big probability) formula is not satisfiable\n");
+    }
     
 }
