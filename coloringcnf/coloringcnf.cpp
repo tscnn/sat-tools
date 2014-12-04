@@ -18,37 +18,59 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
 
 int main(int argc, char *argv[])
 {
     int n = 0;
     double d = 0.5;
+    unsigned int s = time(NULL);
+    
     int opt;
-    while((opt=getopt(argc,argv,"n:d:")) != -1){
+    while((opt=getopt(argc,argv,"n:d:s:")) != -1){
         switch(opt){
         case 'n': n=atoi(optarg); break;
         case 'd': d=atof(optarg); break;
+        case 's': s=atoi(optarg); break;
         default:
             fprintf(stderr,"Usage: %s ... \n",argv[0]);
             exit(0);
         }
     }
-    int e = (int)(d*n+0.5);
+    
+    bool *adj = new bool[n*n];
+    int nbedges = 0;
+    
+    //Generate a random graph. All edges between vertices of different color
+    //have probability of d. The color of a vertice i is i%3.
+    for (int i=0; i<n; i++) {
+        for (int j=i+1; j<n; j++) {
+            if (i%3 == j%3) {
+                adj[i*n+j] = false;
+            } else {
+                if ((RAND_MAX + 1) * dist > rand_r(&s)) {
+                    adj[i*n+j] = true;
+                    nbedges++;
+                }
+            }
+        }
+    }
+    
     printf("c A 3-SAT formula reduced from an instance for 3-COLORING.\n");
     printf("c Construction parameters: n=%d, d=%f\n",n,d);
-    printf("p cnf %d %d\n",3*n,3*n*e);
+    printf("p cnf %d %d\n",3*n,3*nbedges+n);
+    
     //iterate vertices, color of a vertice i is i%3
-    for(int i=0; i<n; i++){
-        
-        int x1 = 3*i;
-        int x2 = 3*i+1;
-        int x3 = 3*i+2;
-        printf("%d %d %d\n",x1,x2,x3);
+    for (int i=0; i<n; i++) {
+        printf("%d %d %d\n",(3*i),(3*i+1),(3*i+2));
+        for (int j=i+1; j<n; j++) {
+            if (adj[i*n+j]) {
+                printf("%d %d\n",(-3*i),(-3*j));
+                printf("%d %d\n",(-3*i+1),(-3*j+1));
+                printf("%d %d\n",(-3*i+2),(-3*j+2));
+            }    
+        }
     }
+    
+    return 0;
 }
-
-
-double random_unique_numbers(int s, int e){
-
-}
-     
