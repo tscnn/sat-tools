@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
             if (i%3 == j%3) {
                 adj[i*n+j] = false;
             } else {
-                if ((RAND_MAX + 1) * dist > rand_r(&s)) {
+                if (RAND_MAX * d >= rand_r(&s)) {
                     adj[i*n+j] = true;
                     nbedges++;
                 }
@@ -62,12 +62,12 @@ int main(int argc, char *argv[])
     
     //iterate vertices, color of a vertice i is i%3
     for (int i=0; i<n; i++) {
-        printf("%d %d %d\n",(3*i),(3*i+1),(3*i+2));
+        printf("%d %d %d 0\n",(3*i+1),(3*i+2),(3*i+3));
         for (int j=i+1; j<n; j++) {
             if (adj[i*n+j]) {
-                printf("%d %d\n",(-3*i),(-3*j));
-                printf("%d %d\n",(-3*i+1),(-3*j+1));
-                printf("%d %d\n",(-3*i+2),(-3*j+2));
+                printf("%d %d 0\n",-(3*i+1),-(3*j+1));
+                printf("%d %d 0\n",-(3*i+2),-(3*j+2));
+                printf("%d %d 0\n",-(3*i+3),-(3*j+3));
             }    
         }
     }

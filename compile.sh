@@ -1,6 +1,7 @@
 #!/bin/bash
-./analyzecnf/compile.sh
-./coloringcnf/compile.sh
-./randomcnf/compile.sh
-./schoening/compile.sh
-./strongcnf/compile.sh
+P=${0%/*}
+$P/analyzecnf/compile.sh
+$P/coloringcnf/compile.sh
+$P/randomcnf/compile.sh
+$P/schoening/compile.sh
+$P/strongcnf/compile.sh

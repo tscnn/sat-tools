@@ -1,2 +1,4 @@
 #!/bin/bash
-g++ analyzecnf.cpp -o ../bin/analyzecnf -O3
+P=${0%/*}
+mkdir -p "$P/../bin"
+g++ $P/analyzecnf.cpp -o $P/../bin/analyzecnf -O3

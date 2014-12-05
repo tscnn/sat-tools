@@ -1,2 +1,4 @@
 #!/bin/bash
-g++ strongcnf.cpp -o ../bin/strongcnf -O3
+P=${0%/*}
+mkdir -p "$P/../bin"
+g++ $P/strongcnf.cpp -o $P/../bin/strongcnf -O3

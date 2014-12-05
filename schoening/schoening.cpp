@@ -23,7 +23,7 @@ int main(int argc, char **argv){
     //read head
     unsigned int n,m;
     if(fscanf(fp," cnf %d %d\n",&n,&m)!=2){
-        fprintf(stderr,"cannot read input");
+        fprintf(stderr,"cannot read input\n");
         exit(0);
     }
     
@@ -34,7 +34,7 @@ int main(int argc, char **argv){
         int u;
         do{
             if(fscanf(fp,"%d",&u)!=1){
-                fprintf(stderr,"cannot read input");
+                fprintf(stderr,"cannot read input\n");
                 exit(0);
             }
             if(u!=0) clauses[i].push_back(u);

@@ -1,2 +1,4 @@
 #!/bin/bash
-g++ randomcnf.cpp -o ../bin/randomcnf -O3
+P=${0%/*}
+mkdir -p "$P/../bin"
+g++ $P/randomcnf.cpp -o $P/../bin/randomcnf -O3
