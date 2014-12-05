@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <set>
+#include <time.h>
+#include <unistd.h>
 
 void swap(int *a, int *b) { 
     int temp = *a; 
@@ -49,18 +51,28 @@ class Clause {
 };
 
 int main(int argc, char** argv){
+
+    int n = -1;
+    int m = -1;
+    unsigned int s = time(NULL);
     
-    //params
-    if (argc < 3 || argc > 4) {
-        printf("usage: randcnf <SEED> <NBVAR> [<NBCLAUSE>]\nif NBCLAUSE is not set, NBCLAUSE=NBVAR*4.2\n");
-        return 0;
+    int opt;
+    while((opt=getopt(argc,argv,"n:m:s:")) != -1){
+        switch(opt){
+        case 'n': n=atoi(optarg); break;
+        case 'm': m=atoi(optarg); break;
+        case 's': s=atoi(optarg); break;
+        default:
+            fprintf(stderr,"Usage: %s -n <nbvars> -m <nbclauses> -s <seed>\nif -m is not set, m=n*4.2\n",argv[0]);
+            exit(0);
+        }
     }
-    unsigned int seed = atoi(argv[1]);
-    int n = atoi(argv[2]),m;
-    if (argc == 4)
-        m = atoi(argv[3]);
-    else
+    
+    if (m <= 0)
         m = (int)(n*4.2+0.5);
+        
+    if (n <= 0)
+        fprintf(stderr,"Parameter n must be greater then zero.\n");
     
     printf("p cnf %d %d\n",n,m);
     std::set<Clause> formula;
@@ -68,7 +80,7 @@ int main(int argc, char** argv){
     //generate clauses
     for (int i=0; i<m; i++) {
         while (1) {
-            Clause c(n,&seed);
+            Clause c(n,&s);
             if (formula.count(c) == 0) {
                 formula.insert(c);
                 printf("%d %d %d 0\n",c[0],c[1],c[2]);
