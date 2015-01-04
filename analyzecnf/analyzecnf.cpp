@@ -1,14 +1,28 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #define MAX_K 10
 
 int main(int argc, char **argv) {
 
+    bool show_table = false;
+
+    //read commandline params
+    int opt;
+    while((opt=getopt(argc,argv,"t")) != -1){
+        switch(opt){
+        case 't': show_table = true; break;
+        default:
+            fprintf(stderr,"Usage: %s ... \n",argv[0]);
+            exit(0);
+        }
+    }
+
     //read from file or from stdin
     FILE *fp;
-    if(argc>=2)
+    if(optind < argc)
     {
         fp = fopen(argv[1],"r");
     }else{
@@ -52,7 +66,7 @@ int main(int argc, char **argv) {
                 else nbneg[-u-1]++;
             }
         }
-        printf("\n");
+
         printf("number of clauses: %d\n",csum);
         if(c[0]>0) printf("number of empty clauses: %d\n",c[0]);
         if(c[1]>0) printf("number of unit clauses: %d\n",c[1]);
@@ -62,17 +76,21 @@ int main(int argc, char **argv) {
         }
         if(c[MAX_K]>0) printf("number of >=%d-clauses: %d\n",MAX_K,c[MAX_K]);
 
-        printf("\n");
-        printf("   Var          +          -\n");
-        printf("============================\n");
-        int sumvar=0,sumneg=0;
-        for (int i=0; i<n; i++) {
-            printf("%6d %10d %10d\n",i+1,nbvar[i],nbneg[i]);
-            sumvar += nbvar[i];
-            sumneg += nbneg[i];
+        if(show_table)
+        {
+            printf("\n");
+            printf("   Var          +          -\n");
+            printf("============================\n");
+            int sumvar=0,sumneg=0;
+            for (int i=0; i<n; i++) {
+                printf("%6d %10d %10d\n",i+1,nbvar[i],nbneg[i]);
+                sumvar += nbvar[i];
+                sumneg += nbneg[i];
+            }
+            printf("============================\n");
+            printf("   Sum %10d %10d\n",sumvar,sumneg);
         }
-        printf("============================\n");
-        printf("   Sum %10d %10d\n",sumvar,sumneg);
+
     }
 
     return 0;
