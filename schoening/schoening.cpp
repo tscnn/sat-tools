@@ -19,10 +19,10 @@ int main(int argc, char **argv){
     seed[0]=time(NULL);
 
     int opt;
-    while ((opt=getopt(argc,argv,"bp:")) != -1)
+    while ((opt=getopt(argc,argv,"c:p:")) != -1)
     {
         switch(opt){
-            case 'b':
+            case 'c':
                 bflag = true;
                 break;
             case 'p':
@@ -35,9 +35,9 @@ int main(int argc, char **argv){
                 if (optopt == 'c')
                     fprintf (stderr,"Option -%c requires an argument.\n",optopt);
                 else if (isprint (optopt))
-                    fprintf (stderr,"Unknown option `-%c'.\n",optopt);
+                    fprintf(stderr,"Unknown option `-%c'.\n",optopt);
                 else
-                    fprintf (stderr,"Unknown option character `\\x%x'.\n",optopt);
+                    fprintf(stderr,"Unknown option character `\\x%x'.\n",optopt);
                 return 1;
             default:
                 abort();
@@ -130,6 +130,8 @@ int main(int argc, char **argv){
 
     bool global_sat=false;
     unsigned int *global_a=new unsigned int[n];
+    mpz_t steps;
+    mpz_init(steps);
     
     //parallelization with openmp
     #pragma omp parallel for
@@ -250,19 +252,40 @@ int main(int argc, char **argv){
                 }
             }
         }
-    
+        
         if(!global_sat && sat){
+            //you are the first, now inform the other processes
             global_sat=true;
-            for(j=0;j<n;j++) global_a[j]=a[j];
+            #pragma omp critical
+            {
+                //save the satisfying assignment
+                for(j=0;j<n;j++)
+                    global_a[j]=a[j];
+            }
+        }
+        
+        #pragma omp critical
+        {
+            //sum up the number of local changes
+            mpz_add(steps,steps,i);
         }
     }
     
+    printf("c steps=");
+    mpz_mul_ui(steps,steps,3*n);
+    mpz_out_str(stdout,10,steps);
+    printf("\n");
+    
     if(global_sat){
-        printf("formula is satisfiable with ");
-        for(int i=0;i<n;i++) printf("%d",global_a[i]);
-        printf("\n");
+        printf("s SATISFIABLE\nv ");
+        for(int i=0;i<n;i++)
+        {
+            printf("%d",global_a[i] ? i+1 : -(i+1));
+            if(i<n-1) printf(" ");
+            else printf("\n");
+        }
     }else{
-        printf("(with very big probability) formula is not satisfiable\n");
+        printf("s UNSATISFIABLE\n");
     }
     
 }
