@@ -9,12 +9,14 @@
 #include <omp.h>
 #include <limits.h>
 
-//#define LOG
+#define LOG
 
 int main(int argc, char **argv){
 
     unsigned int nbprocs=omp_get_num_procs();//number of parallel processes
     bool bflag = false;//if true, choose bigger unsatisfied clauses first, else choose the smaller first
+    unsigned int *seed = new unsigned int[nbprocs];
+    seed[0]=time(NULL);
 
     int opt;
     while ((opt=getopt(argc,argv,"bp:")) != -1)
@@ -25,6 +27,9 @@ int main(int argc, char **argv){
                 break;
             case 'p':
                 nbprocs = atoi(optarg);
+                break;
+            case 's':
+                seed[0] = atoi(optarg);
                 break;
             case '?':
                 if (optopt == 'c')
@@ -80,8 +85,7 @@ int main(int argc, char **argv){
         printf("\n");
     }*/
     
-    unsigned int *seed = new unsigned int[nbprocs];
-    seed[0]=time(NULL);
+    //seeds for the remaining processes
     for(int i=1; i<nbprocs; i++)
         seed[i]=rand_r(seed);
     
@@ -133,9 +137,7 @@ int main(int argc, char **argv){
     
         #ifdef LOG
             #pragma omp critical
-            {
-                printf("c i am worker#%d\n",proc);
-            }
+            printf("c worker#%d says hello\n",proc);
         #endif
         
         //assignment
@@ -145,7 +147,7 @@ int main(int argc, char **argv){
         //literal
         int u;
         //local sat
-        bool sat;
+        bool clause_sat,sat;
         //unlimited counter
         mpz_t i;
         //container for assignment testing
@@ -154,6 +156,8 @@ int main(int argc, char **argv){
         
         //schoenings algorithm
         for( mpz_init(i),sat=false ; mpz_cmp(t,i)>0 && !sat && !global_sat ; mpz_add_ui(i,i,1) ){
+                                                                 //i starts with 0 and is incremented by 1 in each iteration
+                                                                 //while its lower than t or the formula is satisfied by a
             
             //random assignment
             for(j=0;j<n;j++)
@@ -174,34 +178,40 @@ int main(int argc, char **argv){
                 unsat_border.clear();
                 unsat_remain.clear();
                 //test assignment
-                for(l=0,sat=true; l<m; l++){//iter over clauses and add unsat to a container
+                for(l=0;l<m;l++){//iter over clauses and add unsat to a container
                 
-                    for(p=0,sat=false; p<clauses[l].size() && !sat; p++){//iter over literals
-                                                                         //until sat literal is found
-                                                                         //or all literals are tested
+                    clause_sat=false;
+                
+                    for(p=0; p<clauses[l].size() && !clause_sat; p++){//iter over literals
+                                                                      //until sat literal is found
+                                                                      //or all literals are tested
                         u=clauses[l][p];
-                        sat=(u>0 ^ a[abs(u)-1]==0);
+                        clause_sat = (u>0 ^ (a[abs(u)-1] == 0));
                     }
                     
-                    if(!sat)//add unsat clause to a container dependent to its size
+                    if(!clause_sat)
+                        if(clauses[l].size()==(bflag ? maxk : mink))
+                            unsat_border.push_back(l);
+                        else
+                            unsat_remain.push_back(l);
+                    
+                }
+                
+                #ifdef LOG
+                    #pragma omp critical
                     {
-                        if(bflag){
-                            if(clauses[l].size()==maxk) unsat_border.push_back(l);
-                            else unsat_remain.push_back(l);
-                        }else{
-                            if(clauses[l].size()==mink) unsat_border.push_back(l);
-                            else unsat_remain.push_back(l);
-                        }
+                        printf("c worker#%d: unsat_border: ",proc);
+                        for(p=0;p<unsat_border.size();p++)
+                            printf("%d ",unsat_border[p]);
+                        printf("\nc worker#%d: unsat_remain: ",proc);
+                        for(p=0;p<unsat_remain.size();p++)
+                            printf("%d ",unsat_remain[p]);
+                        printf("\n");
                     }
-                    
-                }
+                #endif
+                
+                //formula is satisfied if there are no unsatisfied clauses
                 sat = unsat_border.empty() && unsat_remain.empty();
-                if(!sat){
-                    std::vector<int> *list;
-                    if(unsat_border.size()>0) list = &unsat_border;
-                    else list = &unsat_remain;
-                    l = list->at(rand_r(seed+proc)%list->size());
-                }
                 
                 #ifdef LOG
                     //print assignment
@@ -213,8 +223,15 @@ int main(int argc, char **argv){
                     }
                 #endif
                 
-                //doing a step in random walk (flipping the assignment for a variable)
                 if(!sat){
+                    
+                    //now choose a unsatisfied clause randomly, but clauses from border are prefered
+                    std::vector<int> *list;
+                    if(unsat_border.size()>0) list = &unsat_border;
+                    else list = &unsat_remain;
+                    l = list->at(rand_r(seed+proc)%list->size());
+                
+                    //doing a step in random walk (flipping the assignment for a variable)
                     r=rand_r(seed+proc)%clauses[l].size();
                     v=abs(clauses[l][r])-1;
                     a[v]=1-a[v];
