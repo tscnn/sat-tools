@@ -9,7 +9,7 @@
 #include <omp.h>
 #include <limits.h>
 
-#define LOG
+//#define LOG
 
 int main(int argc, char **argv){
 
