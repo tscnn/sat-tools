@@ -19,10 +19,10 @@ int main(int argc, char **argv){
     seed[0]=time(NULL);
 
     int opt;
-    while ((opt=getopt(argc,argv,"c:p:")) != -1)
+    while ((opt=getopt(argc,argv,"b:p:s:")) != -1)
     {
         switch(opt){
-            case 'c':
+            case 'b':
                 bflag = true;
                 break;
             case 'p':
