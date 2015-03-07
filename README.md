@@ -1,7 +1,7 @@
 sat-tools
 =========
 
-Tools for solving SAT problems, creating and analyzing SAT instances.
+Tools for solving, creating and analyzing SAT instances.
 
 Requirements:
 * g++ compiler
