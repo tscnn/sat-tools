@@ -2,7 +2,7 @@
 
 class CNF {
     private:
-        std::vector<std::vector<int>> clauses;
+        int *C; //clauses
         unsigned int n; //number of variables
         unsigned int m; //number of clauses
         unsigned int *k; //k[i] is the number of clauses with i literals
@@ -38,6 +38,7 @@ CNF::CNF(FILE* fp) {
     k = new unsigned int[m];
     std::fill_n(k,m,0);
     //read clauses
+    std::vector<std::vector<int>> clauses;
     maxk=0;
     mink=UINT_MAX;
     for(int i=0; i<m; i++){
@@ -58,18 +59,7 @@ CNF::CNF(FILE* fp) {
         if(mink>s) mink=s;
         k[s]++;
     }
-}
-
-/**
- * Returns a time-efficient array representation of the formula.
- * 
- * For example, (1 or 2 or -3) and (3 or -4) and (4)
- * gives the array 3  1  2 -3 
- *                 2  3 -4  0 
- *                 1  4  0  0 
- */
-int* CNF::data()
-{
+    //a time-efficient array representation of the formula
     int* f = new int[m*(maxk+1)];
     for(int i=0; i<m; i++){
         f[i*(maxk+1)] = clauses[i].size();
