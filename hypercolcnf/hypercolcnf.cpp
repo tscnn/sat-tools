@@ -1,25 +1,13 @@
 /**
-    //create 3-colored graph instance and reduce it without coloring to 3-SAT.
-     A1         B1         C1
-     A2         B2         C2
 
-     für jeden Knoten i (Beispiel i=A1):
-     A1_is_1   A1_is_2   A1_is_3
-
-     für jede Kante ij (Beispiel ij=A1B1):
-     A1_is_1 => not B1_is_1
-     A1_is_2 => not B1_is_2
-     A1_is_3 => not B1_is_3
-
-     a => b  <=>  not a or b
-     a => not b  <=>  not a or not b
 */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <time.h>
 #include <new>
+#include <algorithm>
+#include <time.h>
 
 int main(int argc, char *argv[])
 {
@@ -27,6 +15,7 @@ int main(int argc, char *argv[])
     int n = 0; //number of vertices
     double d = 0.5; //probability for every edge
     unsigned int s = time(NULL); //seed
+    bool help = false; //show help?
     
     //get parameters
     int opt;
@@ -35,20 +24,34 @@ int main(int argc, char *argv[])
         case 'n': n=atoi(optarg); break;
         case 'd': d=atof(optarg); break;
         case 's': s=atoi(optarg); break;
-        default:
-            fprintf(stderr,"Usage: %s ... \n",argv[0]);
-            exit(0);
+        default: help=true;
         }
     }
+    
+    //show help if parameters are wrong
+    if (optind == 1 || help || n < 0 || d < 0 || d > 1) {
+        fprintf(stderr,"Usage: %s [options]\n\n",argv[0]);
+        fprintf(stderr,"%s constructs a SAT formula in CNF, that is reduced from a\nrandom hypergraph.\n\n",argv[0]);
+        fprintf(stderr,"Options:\n");
+        fprintf(stderr," -h    This help text.\n");
+        fprintf(stderr," -n ?  Number of vertices.\n");
+        fprintf(stderr," -d ?  Edge probability, a float between 0 and 1. Default: 0.5\n");
+        fprintf(stderr," -s ?  Seed for random numbers. Default: timestamp\n");
+        exit(0);
+    }
+    
+    printf("c n=%d\n",n);
+    printf("c d=%f\n",d);
+    printf("c s=%d\n",s);
     
     //init adjacency matrix for the hypergraph
     bool *adj;
     try{
         adj = new bool[n*n*n];
     }
-    catch(std::bad_alloc&)
+    catch(std::bad_alloc& ba)
     {
-	    fprintf(stderr,"Error: Allocating memory for adjacency matrix failed.\n");
+	    fprintf(stderr,"Cannot allocate memory for adjacency matrix: %s\n",ba.what());
         exit(0);
     }
 
