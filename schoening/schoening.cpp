@@ -9,12 +9,12 @@
 #include <omp.h>
 #include <limits.h>
 
-//#define LOG
+#define LOG
 
 int main(int argc, char **argv){
 
-    unsigned int nbprocs=omp_get_num_procs();//number of parallel processes
-    bool bflag = false;//if true, choose bigger unsatisfied clauses first, else choose the smaller first
+    unsigned int nbprocs = omp_get_num_procs(); //number of parallel processes
+    bool bflag = false; //if true, choose bigger unsatisfied clauses first, else choose the smaller first
     unsigned int *seed = new unsigned int[nbprocs];
     seed[0]=time(NULL);
 
@@ -59,9 +59,10 @@ int main(int argc, char **argv){
         fprintf(stderr,"cannot read input\n");
         exit(0);
     }
-    
+    printf("a\n");
     //read clauses
     std::vector<int> clauses[m];
+    printf("b\n");
     unsigned int maxk=0;
     unsigned int mink=UINT_MAX;
     for(int i=0; i<m; i++){

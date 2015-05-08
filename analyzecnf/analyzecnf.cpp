@@ -15,7 +15,9 @@ int main(int argc, char **argv) {
         switch(opt){
         case 't': show_table = true; break;
         default:
-            fprintf(stderr,"Usage: %s ... \n",argv[0]);
+            fprintf(stderr,"Usage: %s [options]\n\n",argv[0]);
+            fprintf(stderr,"Options:\n");
+            fprintf(stderr," -t    Show table.\n");
             exit(0);
         }
     }

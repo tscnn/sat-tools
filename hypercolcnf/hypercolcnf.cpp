@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
         for(int j=1; j<n; j=j+3) {
             for(int k=2; k<n; k=k+3) {
             
-                if (RAND_MAX*d>=rand_r(&s)) {
+                if (RAND_MAX*d >= rand_r(&s)) {
                     nbedges++;
                     adj[i*n*n + j*n + k] = true;
                 } else {
