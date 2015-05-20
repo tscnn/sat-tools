@@ -9,7 +9,7 @@
 #include <omp.h>
 #include <limits.h>
 
-#define LOG
+//#define LOG
 
 int main(int argc, char **argv){
 
@@ -59,10 +59,8 @@ int main(int argc, char **argv){
         fprintf(stderr,"cannot read input\n");
         exit(0);
     }
-    printf("a\n");
     //read clauses
     std::vector<int> clauses[m];
-    printf("b\n");
     unsigned int maxk=0;
     unsigned int mink=UINT_MAX;
     for(int i=0; i<m; i++){
@@ -129,10 +127,13 @@ int main(int argc, char **argv){
         printf("c t=");mpz_out_str(stdout,10,t);printf("\n");
     //#endif
 
+    unsigned int unsat_sum[nbprocs];
     bool global_sat=false;
     unsigned int *global_a=new unsigned int[n];
     mpz_t steps;
     mpz_init(steps);
+    mpz_t g_unsat_clauses;
+    mpz_init(g_unsat_clauses);
     
     //parallelization with openmp
     #pragma omp parallel for
@@ -147,12 +148,15 @@ int main(int argc, char **argv){
         unsigned int *a=new unsigned int[n];
         //counters
         unsigned int j,l,p,r,v;
+        unsat_sum[proc]=0;
         //literal
         int u;
         //local sat
         bool clause_sat,sat;
         //unlimited counter
         mpz_t i;
+        mpz_t unsat_clauses;
+        mpz_init(unsat_clauses);
         //container for assignment testing
         std::vector<int> unsat_border;
         std::vector<int> unsat_remain;
@@ -227,6 +231,10 @@ int main(int argc, char **argv){
                 #endif
                 
                 if(!sat){
+                
+                    //printf("c avg_unsat_clauses=%lu\n",unsat_border.size()+unsat_remain.size());
+                    
+                    mpz_add_ui(unsat_clauses, unsat_clauses, (unsigned long)unsat_border.size()+unsat_remain.size());
                     
                     //now choose a unsatisfied clause randomly, but clauses from border are prefered
                     std::vector<int> *list;
@@ -269,22 +277,28 @@ int main(int argc, char **argv){
         {
             //sum up the number of local changes
             mpz_add(steps,steps,i);
+            
+            mpz_add(g_unsat_clauses,g_unsat_clauses,unsat_clauses);
         }
     }
-    
+
     printf("c steps=");
     mpz_mul_ui(steps,steps,3*n);
     mpz_out_str(stdout,10,steps);
+    printf("\n");
+    
+    printf("c avg_unsat_clauses=");
+    mpz_div(g_unsat_clauses,g_unsat_clauses,steps);
+    mpz_out_str(stdout,10,g_unsat_clauses);
     printf("\n");
     
     if(global_sat){
         printf("s SATISFIABLE\nv ");
         for(int i=0;i<n;i++)
         {
-            printf("%d",global_a[i] ? i+1 : -(i+1));
-            if(i<n-1) printf(" ");
-            else printf("\n");
+            printf("%d ",global_a[i] ? i+1 : -(i+1));
         }
+        printf("0\n");
     }else{
         printf("s UNSATISFIABLE\n");
     }

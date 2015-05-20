@@ -6,3 +6,4 @@ $P/randomcnf/compile.sh
 $P/schoening/compile.sh
 $P/strongcnf/compile.sh
 $P/hypercolcnf/compile.sh
+$P/hgv_cnf/compile.sh
