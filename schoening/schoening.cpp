@@ -9,7 +9,22 @@
 #include <omp.h>
 #include <limits.h>
 
+#include "../inc/cnf.cpp"
+
 //#define LOG
+
+void random_assignment(unsigned int *a, int n, unsigned int *seed)
+{
+    for(unsigned int j=0; j<n; j++)
+    {
+        a[j]=rand_r(seed)%2;
+    }
+}
+
+void test()
+{
+
+}
 
 int main(int argc, char **argv){
 
@@ -45,36 +60,40 @@ int main(int argc, char **argv){
     }
     
     //read from file or from stdin
-    FILE *fp;
-    if(argc>optind) fp=fopen(argv[optind],"r");
-    else fp=stdin;
+    //FILE *fp;
+    //if(argc>optind) fp=fopen(argv[optind],"r");
+    //else fp=stdin;
     
     //skip comments
-    while((fgetc(fp))!='p')
-        while(fgetc(fp)!='\n'){}
+    //while((fgetc(fp))!='p')
+    //    while(fgetc(fp)!='\n'){}
     
     //read head
-    unsigned int n,m;
-    if(fscanf(fp," cnf %d %d\n",&n,&m)!=2){
-        fprintf(stderr,"cannot read input\n");
-        exit(0);
-    }
+    //unsigned int n,m;
+    //if(fscanf(fp," cnf %d %d\n",&n,&m)!=2){
+    //    fprintf(stderr,"cannot read input\n");
+    //    exit(0);
+    //}
     //read clauses
-    std::vector<int> clauses[m];
-    unsigned int maxk=0;
-    unsigned int mink=UINT_MAX;
-    for(int i=0; i<m; i++){
-        int u;
-        do{
-            if(fscanf(fp,"%d",&u)!=1){
-                fprintf(stderr,"cannot read input\n");
-                exit(0);
-            }
-            if(u!=0) clauses[i].push_back(u);
-        }while(u!=0);
-        if(maxk<clauses[i].size()) maxk=clauses[i].size();
-        if(mink>clauses[i].size()) mink=clauses[i].size();
-    }
+    CNF formula(argc>optind ? fopen(argv[optind],"r") : stdin);
+    //std::vector<int> clauses[m];
+    int n = formula.n();
+    int m = formula.m();
+    unsigned int maxk = formula.maxk();
+    unsigned int mink = formula.mink();
+    
+    //for(int i=0; i<m; i++){
+    //    int u;
+    //    do{
+    //        if(fscanf(fp,"%d",&u)!=1){
+    //            fprintf(stderr,"cannot read input\n");
+    //            exit(0);
+    //        }
+    //        if(u!=0) clauses[i].push_back(u);
+    //    }while(u!=0);
+    //    if(maxk<clauses[i].size()) maxk=clauses[i].size();
+    //    if(mink>clauses[i].size()) mink=clauses[i].size();
+    //}
     
     //print clauses
     /*for(int i=0; i<m; i++){
@@ -119,8 +138,8 @@ int main(int argc, char **argv){
         printf("c bflag=%d\n",bflag);
         printf("c n=%d\n",n);
         printf("c m=%d\n",m);
-        printf("c maxk=%d\n",maxk);
-        printf("c mink=%d\n",mink);
+        printf("c maxk=%u\n",maxk);
+        printf("c mink=%u\n",mink);
         printf("c b=%f\n",log2(2.0-2.0/maxk)*n);
         printf("c s=");mpf_out_str(stdout,10,40,s);printf("\n");
         printf("c t_float=");mpf_out_str(stdout,10,40,t_float);printf("\n");
@@ -166,9 +185,7 @@ int main(int argc, char **argv){
                                                                  //i starts with 0 and is incremented by 1 in each iteration
                                                                  //while its lower than t or the formula is satisfied by a
             
-            //random assignment
-            for(j=0;j<n;j++)
-                a[j]=rand_r(seed+proc)%2;//we increase the pointer not the seed!
+            random_assignment(a,n,seed+proc);//we increase the pointer not the seed!
             
             #ifdef LOG
                 #pragma omp critical
@@ -189,15 +206,15 @@ int main(int argc, char **argv){
                 
                     clause_sat=false;
                 
-                    for(p=0; p<clauses[l].size() && !clause_sat; p++){//iter over literals
+                    for(p=0; p<formula.size(l) && !clause_sat; p++){//iter over literals
                                                                       //until sat literal is found
                                                                       //or all literals are tested
-                        u=clauses[l][p];
+                        u = formula.lit(l,p);
                         clause_sat = (u>0 ^ (a[abs(u)-1] == 0));
                     }
                     
                     if(!clause_sat)
-                        if(clauses[l].size()==(bflag ? maxk : mink))
+                        if(formula.size(l)==(bflag ? maxk : mink))
                             unsat_border.push_back(l);
                         else
                             unsat_remain.push_back(l);
@@ -234,7 +251,7 @@ int main(int argc, char **argv){
                 
                     //printf("c avg_unsat_clauses=%lu\n",unsat_border.size()+unsat_remain.size());
                     
-                    mpz_add_ui(unsat_clauses, unsat_clauses, (unsigned long)unsat_border.size()+unsat_remain.size());
+                    mpz_add_ui(unsat_clauses, unsat_clauses, (unsigned long)(unsat_border.size()+unsat_remain.size()));
                     
                     //now choose a unsatisfied clause randomly, but clauses from border are prefered
                     std::vector<int> *list;
@@ -243,19 +260,19 @@ int main(int argc, char **argv){
                     l = list->at(rand_r(seed+proc)%list->size());
                 
                     //doing a step in random walk (flipping the assignment for a variable)
-                    r=rand_r(seed+proc)%clauses[l].size();
-                    v=abs(clauses[l][r])-1;
+                    r = rand_r(seed+proc) % formula.size(l);
+                    v = formula.var(l,r) - 1;
                     a[v]=1-a[v];
                     #ifdef LOG
                         #pragma omp critical
                         {
                             printf("c worker#%d: choosing clause #%d=(",proc,l);
                             //print clause
-                            for(p=0;p<clauses[l].size();p++){
-                                printf("%d",clauses[l][p]);
-                                if(p<clauses[l].size()-1) printf(",");
+                            for(p=0;p<formula.size(l);p++){
+                                printf("%d",formula.lit(l,p));
+                                if(p<formula.size(l)-1) printf(",");
                             }
-                            printf(") and literal #%d=%d\n",r,clauses[l][r]);
+                            printf(") and literal #%d=%d\n",r,formula.lit(l,r));
                         }
                     #endif
                 }
