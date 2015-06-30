@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
     double d = 0.5; //probability for every edge
     unsigned int s = time(NULL); //seed
     bool help = false; //show help?
-    
+
     //get parameters
     int opt;
     while((opt=getopt(argc,argv,"n:d:s:")) != -1){
@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
         default: help=true;
         }
     }
-    
+
     //show help if parameters are wrong
     if (optind == 1 || help || n < 0 || d < 0 || d > 1) {
         fprintf(stderr,"Usage: %s [options]\n\n",argv[0]);
@@ -39,11 +39,11 @@ int main(int argc, char *argv[])
         fprintf(stderr," -s ?  Seed for random numbers. Default: timestamp\n");
         exit(0);
     }
-    
+
     printf("c n=%d\n",n);
     printf("c d=%f\n",d);
     printf("c s=%d\n",s);
-    
+
     //init adjacency matrix for the hypergraph
     bool *adj;
     try{
@@ -58,12 +58,12 @@ int main(int argc, char *argv[])
     int nbedges = 0;
 
     //construct the hypergraph
-    
+
     //iterate all possible edges
     for(unsigned int i=0; i<n; i++) {
         for(unsigned int j=0; j<n; j++) {
             for(unsigned int k=0; k<n; k++) {
-                
+
                 unsigned int ci = i % 3;
                 unsigned int cj = j % 3;
                 unsigned int ck = k % 3;
@@ -74,30 +74,30 @@ int main(int argc, char *argv[])
                 } else {
                     adj[i*n*n + j*n + k] = false;
                 }
-                
+
             }
         }
     }
-    
+
     //print the formula
     printf("p cnf %d %d\n",3*n,3*nbedges+n);
-    
+
     //iterate all vertices and print the reduced clause
     for(int v=0; v<n; v++) {
         printf("%d %d %d 0\n", 3*v+1, 3*v+2, 3*v+3);
     }
-    
+
     //iterate all edges and print the reduced clauses
-    for(int i=0; i<n; i=i+3) {
-        for(int j=1; j<n; j=j+3) {
-            for(int k=2; k<n; k=k+3) {
-            
+    for(unsigned int i=0; i<n; i++) {
+        for(unsigned int j=0; j<n; j++) {
+            for(unsigned int k=0; k<n; k++) {
+
                 if (adj[i*n*n + j*n + k]) {
                     printf("%d %d %d 0\n", -(3*i+1), -(3*j+1), -(3*k+1));
                     printf("%d %d %d 0\n", -(3*i+2), -(3*j+2), -(3*k+2));
                     printf("%d %d %d 0\n", -(3*i+3), -(3*j+3), -(3*k+3));
                 }
-                
+
             }
         }
     }
