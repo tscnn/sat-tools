@@ -64,11 +64,10 @@ int main(int argc, char *argv[])
         for(unsigned int j=0; j<n; j++) {
             for(unsigned int k=0; k<n; k++) {
                 
-                //colors
                 unsigned int ci = i % 3;
                 unsigned int cj = j % 3;
                 unsigned int ck = k % 3;
-                
+
                 if ((ci!=cj or cj!=ck or ci!=ck) and RAND_MAX*d >= rand_r(&s)) {
                     nbedges++;
                     adj[i*n*n + j*n + k] = true;
@@ -89,9 +88,9 @@ int main(int argc, char *argv[])
     }
     
     //iterate all edges and print the reduced clauses
-    for(int i=0; i<n; i++) {
-        for(int j=0; j<n; j++) {
-            for(int k=0; k<n; k++) {
+    for(int i=0; i<n; i=i+3) {
+        for(int j=1; j<n; j=j+3) {
+            for(int k=2; k<n; k=k+3) {
             
                 if (adj[i*n*n + j*n + k]) {
                     printf("%d %d %d 0\n", -(3*i+1), -(3*j+1), -(3*k+1));
