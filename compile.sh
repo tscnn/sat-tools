@@ -9,4 +9,5 @@ $P/hcolcnf/compile.sh
 $P/one_cnf/compile.sh
 $P/isocnf/compile.sh
 $P/hgv_cnf/compile.sh
+$P/edpcnf/compile.sh
 
