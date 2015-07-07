@@ -57,7 +57,6 @@ int main(int argc, char *argv[])
     {
         for (int j=2; j<=k/d; j+=2)
         {
-            printf("d=%d, j=%d\n",d,j);
             int x1 = e + d*(j-1);
             int x2 = e + d*j;
             int y1 = t++;
