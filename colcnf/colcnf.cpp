@@ -20,23 +20,38 @@
 #include <unistd.h>
 #include <time.h>
 #include <new>
+#include <assert.h>
 
 int main(int argc, char *argv[])
 {
-    int n = 0;
+    unsigned int n = 0;
     double d = 0.5;
     unsigned int s = time(NULL);
 
     int opt;
-    while((opt=getopt(argc,argv,"n:d:s:")) != -1){
-        switch(opt){
-        case 'n': n=atoi(optarg); break;
-        case 'd': d=atof(optarg); break;
-        case 's': s=atoi(optarg); break;
-        default:
-            fprintf(stderr,"Usage: %s ... \n",argv[0]);
-            exit(0);
+    while((opt=getopt(argc,argv,"n:d:s:")) != -1)
+    {
+        switch(opt)
+        {
+            case 'n': n=atoi(optarg); break;
+            case 'd': d=atof(optarg); break;
+            case 's': s=atoi(optarg); break;
         }
+    }
+
+    //show help if parameters are wrong
+    if (n==0 || d<0 || d>1) {
+        fprintf(stderr,"Usage: %s [options]\n",argv[0]);
+        fprintf(stderr,"\n");
+        fprintf(stderr,"%s constructs a satisfiable SAT formula in 3-CNF, that is\n",argv[0]);
+        fprintf(stderr,"reduced from a random 3-COLORING instance.\n");
+        fprintf(stderr,"\n");
+        fprintf(stderr,"Options:\n");
+        fprintf(stderr," -h    This help text.\n");
+        fprintf(stderr," -n ?  Number of vertices in graph. Must be positive.\n");
+        fprintf(stderr," -d ?  Add each possible edge with probability of 0<=d<=1. Default: 0.5\n");
+        fprintf(stderr," -s ?  Seed for random numbers. Default: timestamp\n");
+        exit(0);
     }
 
     bool *adj;
@@ -45,7 +60,7 @@ int main(int argc, char *argv[])
     }
     catch(std::bad_alloc&)
     {
-	fprintf(stderr,"Error: Allocating memory for adjacency matrix failed.\n");
+        fprintf(stderr,"Error: allocating memory for adjacency matrix failed.\n");
         exit(0);
     }
 
@@ -64,8 +79,23 @@ int main(int argc, char *argv[])
         }
     }
 
-    printf("c A 3-SAT formula reduced from an instance for 3-COLORING.\n");
-    printf("c Construction parameters: n=%d, d=%f\n",n,d);
+    printf("c A 3-SAT formula reduced from a random 3-COLORING instance.\n");
+    printf("c Construction parameters:\n");
+    printf("c n=%d\n",n);
+    printf("c d=%f\n",d);
+
+    //print the hidden assignment
+    printf("c a=");
+    for (int i=0; i<n; i++)
+    {
+        //three boolean variables for each vertice
+        int col0 = i%3==0 ? 1 : 0;
+        int col1 = i%3==1 ? 1 : 0;
+        int col2 = i%3==2 ? 1 : 0;
+        printf("%d%d%d",col0,col1,col2);
+    }
+    printf("\n");
+
     printf("p cnf %d %d\n",3*n,3*nbedges+n);
 
     //iterate vertices, color of a vertice i is i%3
