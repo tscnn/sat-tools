@@ -12,7 +12,7 @@
 int main(int argc, char *argv[])
 {
     //default values for parameters
-    int n = 0; //number of vertices
+    unsigned int n = 0; //number of vertices
     double d = 0.5; //probability for every edge
     unsigned int s = time(NULL); //seed
     bool help = false; //show help?
@@ -21,25 +21,26 @@ int main(int argc, char *argv[])
     int opt;
     while((opt=getopt(argc,argv,"n:d:s:")) != -1){
         switch(opt){
-        case 'n': n=atoi(optarg); break;
-        case 'd': d=atof(optarg); break;
-        case 's': s=atoi(optarg); break;
-        default: help=true;
+            case 'n': n=atoi(optarg); break;
+            case 'd': d=atof(optarg); break;
+            case 's': s=atoi(optarg); break;
+            default: help=true;
         }
     }
 
     //show help if parameters are wrong
-    if (optind == 1 || help || n < 0 || d < 0 || d > 1) {
+    if (optind==1 || help || n==0 || d<0 || d>1) {
         fprintf(stderr,"Usage: %s [options]\n\n",argv[0]);
-        fprintf(stderr,"%s constructs a SAT formula in CNF, that is reduced from a\nrandom hypergraph.\n\n",argv[0]);
+        fprintf(stderr,"%s constructs a SAT instance in 3-CNF, that is reduced from a\nrandom hypergraph.\n\n",argv[0]);
         fprintf(stderr,"Options:\n");
         fprintf(stderr," -h    This help text.\n");
-        fprintf(stderr," -n ?  Number of vertices.\n");
+        fprintf(stderr," -n ?  Number of vertices. Must be positive.\n");
         fprintf(stderr," -d ?  Edge probability, a float between 0 and 1. Default: 0.5\n");
         fprintf(stderr," -s ?  Seed for random numbers. Default: timestamp\n");
         exit(0);
     }
 
+    //print the instace params
     printf("c n=%d\n",n);
     printf("c d=%f\n",d);
     printf("c s=%d\n",s);
@@ -78,6 +79,19 @@ int main(int argc, char *argv[])
             }
         }
     }
+
+    //print the hidden assignment
+    printf("c a=");
+    for (unsigned int i=0; i<n; i++)
+    {
+        switch (i%3)
+        {
+            case 0: printf("100"); break;
+            case 1: printf("010"); break;
+            case 2: printf("001"); break;
+        }
+    }
+    printf("\n");
 
     //print the formula
     printf("p cnf %d %d\n",3*n,3*nbedges+n);
