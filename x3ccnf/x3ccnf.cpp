@@ -105,12 +105,12 @@ int main(int argc, char **argv)
         }
     }
 
-    printf("c C=");
+    /*printf("c C=");
     for (unsigned int i=0; i<n; i++)
     {
         printf("%d %d %d; ", C[3*i], C[3*i+1], C[3*i+2]);
     }
-    printf("\n");
+    printf("\n");*/
 
     /**
      * reduce to CNF
