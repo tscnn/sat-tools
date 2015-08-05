@@ -60,7 +60,7 @@ void CNF::read(FILE* fp)
         positions[0] = 0;
         sizes.resize(header_m);
         //read literals
-        int u,i=0;        
+        int u,i=0;
         while(i<header_m && fscanf(fp,"%d",&u)==1) {
             if (u==0) {
                 sizes[i] = literals.size() - positions[i];
