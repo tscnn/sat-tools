@@ -58,16 +58,16 @@ int main(int argc, char **argv){
                 abort();
         }
     }
-    
+
     //read from file or from stdin
     //FILE *fp;
     //if(argc>optind) fp=fopen(argv[optind],"r");
     //else fp=stdin;
-    
+
     //skip comments
     //while((fgetc(fp))!='p')
     //    while(fgetc(fp)!='\n'){}
-    
+
     //read head
     //unsigned int n,m;
     //if(fscanf(fp," cnf %d %d\n",&n,&m)!=2){
@@ -81,7 +81,12 @@ int main(int argc, char **argv){
     int m = formula.m();
     unsigned int maxk = formula.maxk();
     unsigned int mink = formula.mink();
-    
+    if (maxk < 3)
+    {
+        printf("c maxk=%u but schoenings algorithm needs maxk>=3, so we set maxk=3.\n", maxk);
+        maxk = 3;
+    }
+
     //for(int i=0; i<m; i++){
     //    int u;
     //    do{
@@ -94,7 +99,7 @@ int main(int argc, char **argv){
     //    if(maxk<clauses[i].size()) maxk=clauses[i].size();
     //    if(mink>clauses[i].size()) mink=clauses[i].size();
     //}
-    
+
     //print clauses
     /*for(int i=0; i<m; i++){
         for(int j=0; j<clauses[i].size(); j++){
@@ -102,11 +107,11 @@ int main(int argc, char **argv){
         }
         printf("\n");
     }*/
-    
+
     //seeds for the remaining processes
     for(int i=1; i<nbprocs; i++)
         seed[i]=rand_r(seed);
-    
+
     /*
     mpz_t is a integer type without size limitation.
     mpz_init(x) initialize x and set it to zero.
@@ -114,25 +119,25 @@ int main(int argc, char **argv){
     mpz_ui_pow_ui(x,b,e) calculates x=b^e. b,e are unsigned ints.
     mpz_add_ui(x,y,n) calculates x=y+n. x,y are mpz_t and n are unsigned int.
     */
-    
+
     //calculate s=(2(k-1)/k)^n
     mpf_t s;
     mpf_init(s);
     mpf_set_ui(s,2*(maxk-1));
     mpf_div_ui(s,s,maxk);
     mpf_pow_ui(s,s,n);
-    
+
     //calculate t=ceil(s/nbprocs)
     mpf_t t_float;
     mpf_init(t_float);
     mpf_div_ui(t_float,s,nbprocs);
     mpf_ceil(t_float,t_float);
-    
+
     //calculate t=(int)t_float;
     mpz_t t;
     mpz_init(t);
     mpz_set_f(t,t_float);
-    
+
     //#ifdef LOG
         printf("c nbproc=%d\n",nbprocs);
         printf("c bflag=%d\n",bflag);
@@ -153,16 +158,16 @@ int main(int argc, char **argv){
     mpz_init(steps);
     mpz_t g_unsat_clauses;
     mpz_init(g_unsat_clauses);
-    
+
     //parallelization with openmp
     #pragma omp parallel for
     for(unsigned int proc=0; proc<nbprocs; proc++){
-    
+
         #ifdef LOG
             #pragma omp critical
             printf("c worker#%d says hello\n",proc);
         #endif
-        
+
         //assignment
         unsigned int *a=new unsigned int[n];
         //counters
@@ -179,14 +184,14 @@ int main(int argc, char **argv){
         //container for assignment testing
         std::vector<int> unsat_border;
         std::vector<int> unsat_remain;
-        
+
         //schoenings algorithm
         for( mpz_init(i),sat=false ; mpz_cmp(t,i)>0 && !sat && !global_sat ; mpz_add_ui(i,i,1) ){
                                                                  //i starts with 0 and is incremented by 1 in each iteration
                                                                  //while its lower than t or the formula is satisfied by a
-            
+
             random_assignment(a,n,seed+proc);//we increase the pointer not the seed!
-            
+
             #ifdef LOG
                 #pragma omp critical
                 {
@@ -195,32 +200,32 @@ int main(int argc, char **argv){
                     printf("\n");
                 }
             #endif
-                        
+
             //random walk until 3n steps are done or a satisfying assignment is reached
             for(j=0; j<3*n && !sat; j++){
-                
+
                 unsat_border.clear();
                 unsat_remain.clear();
                 //test assignment
                 for(l=0;l<m;l++){//iter over clauses and add unsat to a container
-                
+
                     clause_sat=false;
-                
+
                     for(p=0; p<formula.size(l) && !clause_sat; p++){//iter over literals
                                                                       //until sat literal is found
                                                                       //or all literals are tested
                         u = formula.lit(l,p);
                         clause_sat = (u>0 ^ (a[abs(u)-1] == 0));
                     }
-                    
+
                     if(!clause_sat)
                         if(formula.size(l)==(bflag ? maxk : mink))
                             unsat_border.push_back(l);
                         else
                             unsat_remain.push_back(l);
-                    
+
                 }
-                
+
                 #ifdef LOG
                     #pragma omp critical
                     {
@@ -233,10 +238,10 @@ int main(int argc, char **argv){
                         printf("\n");
                     }
                 #endif
-                
+
                 //formula is satisfied if there are no unsatisfied clauses
                 sat = unsat_border.empty() && unsat_remain.empty();
-                
+
                 #ifdef LOG
                     //print assignment
                     #pragma omp critical
@@ -246,19 +251,19 @@ int main(int argc, char **argv){
                         printf(sat?" satisfies ! ! ! ! ! ! ! ! ! ! ! !\n":" satisfies not\n");
                     }
                 #endif
-                
+
                 if(!sat){
-                
+
                     //printf("c avg_unsat_clauses=%lu\n",unsat_border.size()+unsat_remain.size());
-                    
+
                     mpz_add_ui(unsat_clauses, unsat_clauses, (unsigned long)(unsat_border.size()+unsat_remain.size()));
-                    
+
                     //now choose a unsatisfied clause randomly, but clauses from border are prefered
                     std::vector<int> *list;
                     if(unsat_border.size()>0) list = &unsat_border;
                     else list = &unsat_remain;
                     l = list->at(rand_r(seed+proc)%list->size());
-                
+
                     //doing a step in random walk (flipping the assignment for a variable)
                     r = rand_r(seed+proc) % formula.size(l);
                     v = formula.var(l,r) - 1;
@@ -278,7 +283,7 @@ int main(int argc, char **argv){
                 }
             }
         }
-        
+
         if(!global_sat && sat){
             //you are the first, now inform the other processes
             global_sat=true;
@@ -289,12 +294,12 @@ int main(int argc, char **argv){
                     global_a[j]=a[j];
             }
         }
-        
+
         #pragma omp critical
         {
             //sum up the number of local changes
             mpz_add(steps,steps,i);
-            
+
             mpz_add(g_unsat_clauses,g_unsat_clauses,unsat_clauses);
         }
     }
@@ -303,12 +308,12 @@ int main(int argc, char **argv){
     mpz_mul_ui(steps,steps,3*n);
     mpz_out_str(stdout,10,steps);
     printf("\n");
-    
+
     printf("c avg_unsat_clauses=");
     mpz_div(g_unsat_clauses,g_unsat_clauses,steps);
     mpz_out_str(stdout,10,g_unsat_clauses);
     printf("\n");
-    
+
     if(global_sat){
         printf("s SATISFIABLE\nv ");
         for(int i=0;i<n;i++)
@@ -319,5 +324,5 @@ int main(int argc, char **argv){
     }else{
         printf("s UNSATISFIABLE\n");
     }
-    
+
 }
