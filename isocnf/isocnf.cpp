@@ -109,17 +109,46 @@ int main(int argc, char *argv[])
     }
     printf("\n");
 
+    /*printf("c G (size=%u)\n", n);
+    for (unsigned int i=0; i<n; i++)
+    {
+        for (unsigned int j=0; j<n; j++)
+        {
+            if (G[i*n+j])
+            {
+                printf("c %u->%u\n", i, j);
+            }
+        }
+    }*/
+
+    /*printf("c H (size=%u)\n", n+m);
+    for (unsigned int i=0; i<n+m; i++)
+    {
+        for (unsigned int j=0; j<n+m; j++)
+        {
+            if (H[i*(n+m)+j])
+            {
+                printf("c %u->%u\n", i, j);
+            }
+        }
+    }*/
+
     CNF cnf;
 
     for (unsigned int i=0; i<n; i++)
     {
         std::vector<int> clause;
+        //printf("c");
         for (unsigned int j=0; j<n+m; j++)
         {
+            //printf(" x_%u,%u", i, j);
             clause.push_back(i*(n+m)+j+1);
         }
+        //printf("\n");
         cnf.add(clause);
     }
+
+    //printf("c\n");
 
     for (unsigned int i=0; i<n; i++)
     {
@@ -127,6 +156,7 @@ int main(int argc, char *argv[])
         {
             for (unsigned int k=j+1; k<n+m; k++)
             {
+                //printf("c -x_%u,%u -x%u,%u\n", i, j, i, k);
                 std::vector<int> clause;
                 clause.push_back(-(i*(n+m)+j+1));
                 clause.push_back(-(i*(n+m)+k+1));
@@ -135,12 +165,15 @@ int main(int argc, char *argv[])
         }
     }
 
+    //printf("c\n");
+
     for (unsigned int i=0; i<n+m; i++)
     {
         for (unsigned int j=0; j<n; j++)
         {
             for (unsigned int k=j+1; k<n; k++)
             {
+                //printf("c -x_%u,%u -x%u,%u\n", j, i, k, i);
                 std::vector<int> clause;
                 clause.push_back(-(j*(n+m)+i+1));
                 clause.push_back(-(k*(n+m)+i+1));
@@ -148,6 +181,8 @@ int main(int argc, char *argv[])
             }
         }
     }
+
+    //printf("c\n");
 
     for (unsigned int i=0; i<n; i++)
     {
@@ -161,6 +196,9 @@ int main(int argc, char *argv[])
                     {
                         if (!H[k*(n+m)+l])
                         {
+                            //printf("c i=%u j=%u; k=%u l=%u\n", i, j, k, l);
+                            //printf("c -x_%u,%u -x%u,%u\n", i, k, j, l);
+                            //printf("c -x_%u,%u -x%u,%u\n", i, l, j, k);
                             std::vector<int> clause1;
                             clause1.push_back(-(i*(n+m)+k+1));
                             clause1.push_back(-(j*(n+m)+l+1));
